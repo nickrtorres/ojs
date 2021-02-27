@@ -1,5 +1,8 @@
+(ocamllex lexer)
+
+(ocamlyacc parser)
+
 (library
  (name libojs)
- (modules_without_implementation types)
  (inline_tests)
  (preprocess (pps ppx_inline_test)))

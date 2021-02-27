@@ -3,7 +3,7 @@ type js_base_type = BaseTyBoolean of bool | BaseTyNumber of float
 type js_type = TyBase of js_base_type | TyReference of js_base_type
 
 (* 11.1 -- FIXME: incomplete *)
-type primary_expr = Literal of js_base_type
+type primary_expr = Literal of js_base_type | Identifier of string
 
 (* 11.2 -- FIXME: incomplete *)
 type member_expr = PrimaryExpr of primary_expr
@@ -55,16 +55,29 @@ type conditional_expr = LogicalOrExpr of logical_or_expr
 (* 11.13 -- FIXME incomplete *)
 type assign_expr = ConditionalExpr of conditional_expr
 
+type expression = assign_expr
+
 (* 14 -- FIXME incomplete *)
 type var_stmt = VarDeclaration of string * assign_expr
 
-type stmt = VarStmt of var_stmt
+type stmt = VarStmt of var_stmt | ExprStmt of expression
 
 type source_element = Stmt of stmt
 
-type program = SourceElement of source_element
+type source_elements =
+  | SourceElements of source_elements * source_element
+  | SourceElement of source_element
+
+type program = source_elements
 
 type js_object = (string, js_base_type) Hashtbl.t
 
 (* 10 -- FIXME incomplete *)
 type execution_ctx = { var_object : js_object }
+
+type completion = Normal of js_base_type option
+
+let string_of_completion = function
+  | Normal (Some (BaseTyBoolean b)) -> string_of_bool b
+  | Normal (Some (BaseTyNumber n)) -> string_of_float n
+  | Normal None -> "undefined"
