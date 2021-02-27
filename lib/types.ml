@@ -1,4 +1,7 @@
-type js_base_type = BaseTyBoolean of bool | BaseTyNumber of float
+type js_base_type =
+  | BaseTyBoolean of bool
+  | BaseTyNumber of float
+  | BaseTyUndefined
 
 type js_type = TyBase of js_base_type | TyReference of js_base_type
 
@@ -62,7 +65,13 @@ type var_stmt = VarDeclaration of string * assign_expr
 
 type stmt = VarStmt of var_stmt | ExprStmt of expression
 
-type source_element = Stmt of stmt
+and block = stmt list
+
+type function_declaration = string * string list * block
+
+type source_element =
+  | Stmt of stmt
+  | FunctionDeclaration of function_declaration
 
 type source_elements =
   | SourceElements of source_elements * source_element
@@ -70,16 +79,18 @@ type source_elements =
 
 type program = source_elements
 
-type js_object = (string, js_base_type) Hashtbl.t
-
 (* 10 -- FIXME incomplete *)
-type execution_ctx = { var_object : js_object }
+type execution_ctx = { var_object : (string, js_base_type) Hashtbl.t }
 
 let mk_execution_ctx () = { var_object = Hashtbl.create 100 }
 
 type completion = Normal of js_base_type option
 
+let string_of_base_ty = function
+  | BaseTyNumber n -> string_of_float n
+  | BaseTyBoolean b -> string_of_bool b
+  | BaseTyUndefined -> "undefined"
+
 let string_of_completion = function
-  | Normal (Some (BaseTyBoolean b)) -> string_of_bool b
-  | Normal (Some (BaseTyNumber n)) -> string_of_float n
+  | Normal (Some base_ty) -> string_of_base_ty base_ty
   | Normal None -> "undefined"

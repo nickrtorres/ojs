@@ -46,13 +46,31 @@ let exec stmt ctx =
       let value = eval expr ctx in
       Normal (Some value)
 
+let declare fn _ctx =
+  let _iden, args, _block = fn in
+  let string_of_args xs =
+    let rec string_of_args' xs acc =
+      match xs with
+      | [] -> acc
+      | [ x ] -> acc ^ x
+      | hd :: tl -> string_of_args' tl (acc ^ hd ^ ",")
+    in
+    string_of_args' xs ""
+  in
+  let _p = string_of_args args in
+  ()
+
 let run program ctx =
   let rec run' = function
     | SourceElement (Stmt stmt) -> exec stmt ctx
+    | SourceElement (FunctionDeclaration fn) ->
+        declare fn ctx;
+        Normal None
     | SourceElements (se, Stmt stmt) ->
         (* FIXME how to return the first Completion? *)
         let _ = run' se in
         exec stmt ctx
+    | _ -> failwith "todo!"
   in
 
   run' program
