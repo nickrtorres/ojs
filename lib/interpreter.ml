@@ -56,23 +56,6 @@ let exec stmt ctx =
       let value = eval expr in
       add_var ctx iden value
 
-let%test "basic add" =
-  let lhs =
-    MultExpr
-      (UnaryExpr
-         (PostfixExpr
-            (LhsExpr
-               (NewExpr (MemberExpr (PrimaryExpr (Literal (BaseTyNumber 10.))))))))
-  in
-  let rhs =
-    UnaryExpr
-      (PostfixExpr
-         (LhsExpr
-            (NewExpr (MemberExpr (PrimaryExpr (Literal (BaseTyNumber 32.)))))))
-  in
-  let expr = Add (lhs, rhs) in
-  add expr = BaseTyNumber 42.
-
 let%test "basic var" =
   let iden = "foo" in
   let expr =
@@ -95,6 +78,37 @@ let%test "basic var" =
                                                    (PrimaryExpr
                                                       (Literal
                                                          (BaseTyNumber 42.))))))))))))))))))
+  in
+  let stmt = VarStmt (VarDeclaration (iden, expr)) in
+  let ctx = { var_object = Hashtbl.create 100 } in
+  let updated = exec stmt ctx in
+  Hashtbl.find updated.var_object iden = BaseTyNumber 42.
+
+let%test "basic var" =
+  let iden = "foo" in
+  let addend =
+    MultExpr
+      (UnaryExpr
+         (PostfixExpr
+            (LhsExpr
+               (NewExpr (MemberExpr (PrimaryExpr (Literal (BaseTyNumber 10.))))))))
+  in
+  let augend =
+    UnaryExpr
+      (PostfixExpr
+         (LhsExpr
+            (NewExpr (MemberExpr (PrimaryExpr (Literal (BaseTyNumber 32.)))))))
+  in
+  let expr =
+    ConditionalExpr
+      (LogicalOrExpr
+         (LogicalAndExpr
+            (BitwiseOrExpr
+               (BitwiseXorExpr
+                  (BitwiseAndExpr
+                     (EqualityExpr
+                        (RelationalExpr
+                           (ShiftExpr (AddExpr (Add (addend, augend)))))))))))
   in
   let stmt = VarStmt (VarDeclaration (iden, expr)) in
   let ctx = { var_object = Hashtbl.create 100 } in
