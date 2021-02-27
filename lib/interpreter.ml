@@ -46,14 +46,16 @@ let exec stmt ctx =
       let value = eval expr ctx in
       Normal (Some value)
 
-let rec run =
-  let ctx = { var_object = Hashtbl.create 100 } in
-  function
-  | SourceElement (Stmt stmt) -> exec stmt ctx
-  | SourceElements (se, Stmt stmt) ->
-      (* FIXME how to return the first Completion? *)
-      let _ = run se in
-      exec stmt ctx
+let run program ctx =
+  let rec run' = function
+    | SourceElement (Stmt stmt) -> exec stmt ctx
+    | SourceElements (se, Stmt stmt) ->
+        (* FIXME how to return the first Completion? *)
+        let _ = run' se in
+        exec stmt ctx
+  in
+
+  run' program
 
 let%test "basic var" =
   let iden = "foo" in

@@ -75,6 +75,8 @@ type js_object = (string, js_base_type) Hashtbl.t
 (* 10 -- FIXME incomplete *)
 type execution_ctx = { var_object : js_object }
 
+let mk_execution_ctx () = { var_object = Hashtbl.create 100 }
+
 type completion = Normal of js_base_type option
 
 let string_of_completion = function
