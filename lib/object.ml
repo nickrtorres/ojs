@@ -19,7 +19,7 @@ let rec get name obj =
   | None -> (
       match obj.prototype with
       | Some proto -> get name proto
-      | None -> BaseTyUndefined)
+      | None -> TyUndefined)
 
 (* FIXME 8.6.2.3 *)
 let can_put _name _obj = true
@@ -37,23 +37,23 @@ let has_property name obj =
 (* Tests *)
 let%test "add properties" =
   let obj = new_object () in
-  let () = put "foo" (BaseTyNumber 42.) obj in
-  get "foo" obj = BaseTyNumber 42.
+  let () = put "foo" (TyNumber 42.) obj in
+  get "foo" obj = TyNumber 42.
 
 let%test "update properties" =
   let obj = new_object () in
-  let () = put "foo" (BaseTyNumber 100.) obj in
-  let () = put "foo" (BaseTyNumber 42.) obj in
-  get "foo" obj = BaseTyNumber 42.
+  let () = put "foo" (TyNumber 100.) obj in
+  let () = put "foo" (TyNumber 42.) obj in
+  get "foo" obj = TyNumber 42.
 
 let%test "has property" =
   let obj = new_object () in
-  let () = put "foo" (BaseTyNumber 42.) obj in
+  let () = put "foo" (TyNumber 42.) obj in
   has_property "foo" obj
 
 let%test "prototype properties" =
   let a = new_object () in
   let b = new_object_with_prototype a in
   let c = new_object_with_prototype b in
-  let () = put "foo" (BaseTyNumber 100.) a in
+  let () = put "foo" (TyNumber 100.) a in
   has_property "foo" c

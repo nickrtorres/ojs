@@ -1,9 +1,8 @@
 type js_base_type =
-  | BaseTyBoolean of bool
-  | BaseTyNumber of float
-  | BaseTyUndefined
-
-type js_type = TyBase of js_base_type | TyReference of js_base_type
+  | TyBoolean of bool
+  | TyNumber of float
+  | TyUndefined
+  | TyReference of js_base_type * string
 
 (* 11.1 -- FIXME: incomplete *)
 type primary_expr = Literal of js_base_type | Identifier of string
@@ -56,14 +55,24 @@ type logical_or_expr = LogicalAndExpr of logical_and_expr
 type conditional_expr = LogicalOrExpr of logical_or_expr
 
 (* 11.13 -- FIXME incomplete *)
-type assign_expr = ConditionalExpr of conditional_expr
+type assign_expr =
+  | ConditionalExpr of conditional_expr
+  | SimpleAssignExpr of lhs_expr * assign_op * assign_expr
+
+and assign_op = Assign
 
 type expression = assign_expr
 
 (* 14 -- FIXME incomplete *)
 type var_stmt = VarDeclaration of string * assign_expr
 
-type stmt = VarStmt of var_stmt | ExprStmt of expression
+type stmt =
+  | VarStmt of var_stmt
+  | ExprStmt of expression
+  | IterationStmt of iteration_stmt
+
+(* 12.6 *)
+and iteration_stmt = WhileStmt of expression * stmt
 
 and block = stmt list
 
@@ -86,10 +95,18 @@ let mk_execution_ctx () = { var_object = Hashtbl.create 100 }
 
 type completion = Normal of js_base_type option
 
-let string_of_base_ty = function
-  | BaseTyNumber n -> string_of_float n
-  | BaseTyBoolean b -> string_of_bool b
-  | BaseTyUndefined -> "undefined"
+let rec string_of_base_ty = function
+  | TyNumber n -> string_of_float n
+  | TyBoolean b -> string_of_bool b
+  | TyUndefined -> "undefined"
+  | TyReference (r, _) -> string_of_base_ty r
+
+(* 9.2 ToBoolean *)
+let rec bool_of_base_ty = function
+  | TyNumber n -> n != 0.
+  | TyBoolean b -> b
+  | TyUndefined -> false
+  | TyReference (r, _) -> bool_of_base_ty r
 
 let string_of_completion = function
   | Normal (Some base_ty) -> string_of_base_ty base_ty

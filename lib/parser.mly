@@ -2,7 +2,7 @@
 %}
 
 %start program
-%token VAR PLUS EQ MINUS EOF
+%token VAR PLUS EQ MINUS EOF LPAREN RPAREN WHILE
 %token <bool>   BOOL
 %token <string> IDEN
 %token <float>  NUM
@@ -20,6 +20,7 @@ source_element     : stmt                           { Types.Stmt($1)            
 
 stmt               : var_stmt                       { Types.VarStmt($1)            }
                    | expr_stmt                      { Types.ExprStmt($1)           }
+                   | iteration_stmt                 { Types.IterationStmt($1)      }
   ;
 
 var_stmt           : VAR IDEN EQ assign_expr        { Types.VarDeclaration($2, $4) }
@@ -28,10 +29,17 @@ var_stmt           : VAR IDEN EQ assign_expr        { Types.VarDeclaration($2, $
 expr_stmt          : assign_expr                     { $1                          }
   ;
 
+iteration_stmt     : WHILE LPAREN expr_stmt RPAREN stmt { Types.WhileStmt($3, $5)  }
+  ;
+
 assign_expr        : conditional_expr               { Types.ConditionalExpr($1)    }
+                   | simple_assign_expr             { $1                           }
   ;
 
 conditional_expr   : logical_or_expr                { Types.LogicalOrExpr($1)      }
+  ;
+
+simple_assign_expr : lhs_expr EQ assign_expr        { Types.SimpleAssignExpr($1, Types.Assign, $3) }
   ;
 
 logical_or_expr    : logical_and_expr               { Types.LogicalAndExpr($1)     }
@@ -85,8 +93,8 @@ primary_expr       : literal                        { Types.Literal($1)         
                    | identifier                     { Types.Identifier($1)         }
   ;
 
-literal            : NUM                            { Types.BaseTyNumber($1)       }
-                   | BOOL                           { Types.BaseTyBoolean($1)      }
+literal            : NUM                            { Types.TyNumber($1)       }
+                   | BOOL                           { Types.TyBoolean($1)      }
   ;
 
 identifier         : IDEN                           { $1                           }

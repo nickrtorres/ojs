@@ -1,7 +1,24 @@
 open Types
 
+let add_var ctx iden value = Hashtbl.add ctx.var_object iden value
+
+(* FIXME undefined if var does not exist *)
+let update_var ctx iden value = Hashtbl.replace ctx.var_object iden value
+
 let eval expr ctx =
-  let rec assign = function ConditionalExpr expr -> conditional expr
+  let rec assign = function
+    | ConditionalExpr expr -> conditional expr
+    | SimpleAssignExpr (iden, op, value) -> (
+        let iden =
+          match lhs iden with
+          | TyReference (_, iden) -> iden
+          | _ -> failwith "TODO!"
+        in
+        let value = assign value in
+        match op with
+        | Assign ->
+            let () = update_var ctx iden value in
+            value)
   and conditional = function LogicalOrExpr expr -> logical_or expr
   and logical_or = function LogicalAndExpr expr -> logical_and expr
   and logical_and = function BitwiseOrExpr expr -> bitwise_or expr
@@ -17,7 +34,9 @@ let eval expr ctx =
         let lhs = add lhs in
         let rhs = mult rhs in
         match (lhs, rhs) with
-        | BaseTyNumber lhs, BaseTyNumber rhs -> BaseTyNumber (lhs +. rhs)
+        | TyNumber lhs, TyNumber rhs -> TyNumber (lhs +. rhs)
+        | TyReference (TyNumber value, _), TyNumber rhs ->
+            TyNumber (value +. rhs)
         | _ -> failwith "todo!")
     | Sub (_, _) -> failwith "todo!"
   and mult = function UnaryExpr expr -> unary expr
@@ -29,14 +48,12 @@ let eval expr ctx =
   and primary = function
     | Literal ty -> ty
     (* FIXME "The result of an identifier is always a value of type Reference" *)
-    | Identifier iden -> Hashtbl.find ctx.var_object iden
+    | Identifier iden -> TyReference (Hashtbl.find ctx.var_object iden, iden)
   in
 
   assign expr
 
-let add_var ctx iden value = Hashtbl.add ctx.var_object iden value
-
-let exec stmt ctx =
+let rec exec stmt ctx =
   match stmt with
   | VarStmt (VarDeclaration (iden, expr)) ->
       let value = eval expr ctx in
@@ -45,6 +62,14 @@ let exec stmt ctx =
   | ExprStmt expr ->
       let value = eval expr ctx in
       Normal (Some value)
+  | IterationStmt (WhileStmt (cond, body)) ->
+      let rec loop cond =
+        if eval cond ctx |> bool_of_base_ty then
+          let _ = exec body ctx in
+          loop cond
+        else Normal None
+      in
+      loop cond
 
 let declare fn _ctx =
   let _iden, args, _block = fn in
@@ -95,13 +120,12 @@ let%test "basic var" =
                                              (NewExpr
                                                 (MemberExpr
                                                    (PrimaryExpr
-                                                      (Literal
-                                                         (BaseTyNumber 42.))))))))))))))))))
+                                                      (Literal (TyNumber 42.))))))))))))))))))
   in
   let stmt = VarStmt (VarDeclaration (iden, expr)) in
   let ctx = { var_object = Hashtbl.create 100 } in
   let _ = exec stmt ctx in
-  Hashtbl.find ctx.var_object iden = BaseTyNumber 42.
+  Hashtbl.find ctx.var_object iden = TyNumber 42.
 
 let%test "basic var" =
   let iden = "foo" in
@@ -110,13 +134,12 @@ let%test "basic var" =
       (UnaryExpr
          (PostfixExpr
             (LhsExpr
-               (NewExpr (MemberExpr (PrimaryExpr (Literal (BaseTyNumber 10.))))))))
+               (NewExpr (MemberExpr (PrimaryExpr (Literal (TyNumber 10.))))))))
   in
   let augend =
     UnaryExpr
       (PostfixExpr
-         (LhsExpr
-            (NewExpr (MemberExpr (PrimaryExpr (Literal (BaseTyNumber 32.)))))))
+         (LhsExpr (NewExpr (MemberExpr (PrimaryExpr (Literal (TyNumber 32.)))))))
   in
   let expr =
     ConditionalExpr
@@ -132,4 +155,4 @@ let%test "basic var" =
   let stmt = VarStmt (VarDeclaration (iden, expr)) in
   let ctx = { var_object = Hashtbl.create 100 } in
   let _ = exec stmt ctx in
-  Hashtbl.find ctx.var_object iden = BaseTyNumber 42.
+  Hashtbl.find ctx.var_object iden = TyNumber 42.
