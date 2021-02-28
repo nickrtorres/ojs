@@ -2,7 +2,7 @@
 %}
 
 %start program
-%token VAR PLUS EQ MINUS EOF LPAREN RPAREN WHILE
+%token VAR PLUS EQ MINUS EOF LPAREN RPAREN WHILE LT
 %token <bool>   BOOL
 %token <string> IDEN
 %token <float>  NUM
@@ -61,6 +61,7 @@ equality_expr      : relational_expr                { Types.RelationalExpr($1)  
   ;
 
 relational_expr    : shift_expr                     { Types.ShiftExpr($1)          }
+                   | relational_expr LT shift_expr  { Types.LtExpr($1, $3)         }
   ;
 
 shift_expr         : add_expr                       { Types.AddExpr($1)            }

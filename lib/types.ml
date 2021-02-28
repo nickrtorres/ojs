@@ -33,7 +33,9 @@ type add_expr =
 type shift_expr = AddExpr of add_expr
 
 (* 11.8 -- FIXME incomplete *)
-type relational_expr = ShiftExpr of shift_expr
+type relational_expr =
+  | ShiftExpr of shift_expr
+  | LtExpr of relational_expr * shift_expr
 
 (* 11.9 -- FIXME incomplete *)
 type equality_expr = RelationalExpr of relational_expr

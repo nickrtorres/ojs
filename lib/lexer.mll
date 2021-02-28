@@ -15,6 +15,7 @@ rule token = parse
   | '-'                  { MINUS }
   | '('                  { LPAREN }
   | ')'                  { RPAREN }
+  | '<'                  { LT }
   | "while"              { WHILE }
   | '='                  { EQ }
   | ['A' - 'Z' 'a' - 'z'] ['A' - 'Z' 'a' - 'z' '0' - '9' '_'] * as iden  { IDEN(iden) }

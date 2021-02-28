@@ -26,7 +26,21 @@ let eval expr ctx =
   and bitwise_xor = function BitwiseAndExpr expr -> bitwise_and expr
   and bitwise_and = function EqualityExpr expr -> equality expr
   and equality = function RelationalExpr expr -> relational expr
-  and relational = function ShiftExpr expr -> shift expr
+  and relational = function
+    | ShiftExpr expr -> shift expr
+    | LtExpr (left, right) ->
+        (* FIXME : implement abstract relational comparison algorithm *)
+        let left =
+          match relational left with
+          | TyNumber n | TyReference (TyNumber n, _) -> n
+          | _ -> failwith "todo!"
+        in
+        let right =
+          match shift right with
+          | TyNumber n | TyReference (TyNumber n, _) -> n
+          | _ -> failwith "todo!"
+        in
+        TyBoolean (left < right)
   and shift = function AddExpr expr -> add expr
   and add = function
     | MultExpr expr -> mult expr
