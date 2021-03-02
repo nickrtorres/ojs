@@ -2,10 +2,24 @@
 %}
 
 %start program
-%token VAR PLUS EQ MINUS EOF LPAREN RPAREN WHILE LT GT LTE GTE PRINT IF ELSE
+%token ELSE
+%token EOF
+%token EQ
+%token GT
+%token GTE
+%token IF
+%token LPAREN
+%token LT
+%token LTE
+%token MINUS
+%token PLUS
+%token PRINT
+%token RPAREN
+%token VAR
+%token WHILE
 %token <bool>   BOOL
-%token <string> IDEN
 %token <float>  NUM
+%token <string> IDEN
 %type <Types.program> program
 %%
 program            : source_elements EOF             { $1                          }

@@ -8,9 +8,6 @@ rule token = parse
   | [' ']                { token lexbuf }
   (* FIXME floats! *)
   | ['0' - '9'] * as n   { NUM (float_of_string n) }
-  | "var"                { VAR }
-  | "true"               { BOOL(true) }
-  | "false"              { BOOL(false) }
   | '+'                  { PLUS }
   | '-'                  { MINUS }
   | '('                  { LPAREN }
@@ -19,11 +16,14 @@ rule token = parse
   | '>'                  { GT }
   | "<="                 { LTE }
   | ">="                 { GTE }
-  | "while"              { WHILE }
-  | "print"              { PRINT }
-  | "if"                 { IF }
-  | "else"               { ELSE }
   | '='                  { EQ }
+  | "else"               { ELSE }
+  | "false"              { BOOL(false) }
+  | "if"                 { IF }
+  | "print"              { PRINT }
+  | "true"               { BOOL(true) }
+  | "var"                { VAR }
+  | "while"              { WHILE }
   | ['A' - 'Z' 'a' - 'z'] ['A' - 'Z' 'a' - 'z' '0' - '9' '_'] * as iden  { IDEN(iden) }
   | eof                  { EOF }
   | _ { raise (Lex_error (lexbuf.lex_curr_p.pos_lnum, Lexing.lexeme lexbuf)) }
