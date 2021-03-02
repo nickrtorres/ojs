@@ -10,6 +10,8 @@ rule token = parse
   | ['0' - '9'] * as n   { NUM (float_of_string n) }
   | '+'                  { PLUS }
   | '-'                  { MINUS }
+  | '{'                  { LBRACE }
+  | '}'                  { RBRACE }
   | '('                  { LPAREN }
   | ')'                  { RPAREN }
   | '<'                  { LT }

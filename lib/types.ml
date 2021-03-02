@@ -79,6 +79,7 @@ type stmt =
   | IterationStmt of iteration_stmt
   | PrintStmt of expression
   | IfStmt of expression * stmt * stmt option
+  | Block of block
 
 (* 12.6 *)
 and iteration_stmt = WhileStmt of expression * stmt
@@ -102,7 +103,7 @@ type execution_ctx = { var_object : (string, js_type) Hashtbl.t }
 
 let mk_execution_ctx () = { var_object = Hashtbl.create 100 }
 
-type completion = Normal of js_type option
+type completion = Normal of js_type option | Abrupt
 
 let rec string_of_ty = function
   | TyNumber n -> Printf.sprintf "%g" n
@@ -133,3 +134,4 @@ let rec number_of_ty = function
 let string_of_completion = function
   | Normal (Some ty) -> string_of_ty ty
   | Normal None -> "undefined"
+  | Abrupt -> "abrupt"

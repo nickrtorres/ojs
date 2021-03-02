@@ -8,12 +8,14 @@
 %token GT
 %token GTE
 %token IF
+%token LBRACE
 %token LPAREN
 %token LT
 %token LTE
 %token MINUS
 %token PLUS
 %token PRINT
+%token RBRACE
 %token RPAREN
 %token VAR
 %token WHILE
@@ -37,6 +39,15 @@ stmt               : var_stmt                       { Types.VarStmt($1)         
                    | iteration_stmt                 { Types.IterationStmt($1)      }
                    | print_stmt                     { Types.PrintStmt($1)          }
                    | if_stmt                        { $1                           }
+                   | block_stmt                     { Types.Block($1) }
+  ;
+
+block_stmt         : LBRACE stmt_list RBRACE        { List.rev $2 }
+                   | LBRACE RBRACE                  { [] }
+  ;
+
+stmt_list          : stmt_list stmt                 { $2 :: $1 }
+                   | stmt                           { $1 :: []   }
   ;
 
 var_stmt           : VAR IDEN EQ assign_expr        { Types.VarDeclaration($2, $4) }

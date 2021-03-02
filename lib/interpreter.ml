@@ -84,30 +84,39 @@ let eval expr ctx =
 
   assign expr
 
-let rec exec stmt ctx =
-  match stmt with
-  | VarStmt (VarDeclaration (iden, expr)) ->
-      let value = eval expr ctx in
-      let () = add_var ctx iden value in
-      Normal None
-  | ExprStmt expr ->
-      let value = eval expr ctx in
-      Normal (Some value)
-  | IterationStmt (WhileStmt (cond, body)) ->
-      let rec loop cond =
-        if eval cond ctx |> bool_of_ty then
-          let _ = exec body ctx in
-          loop cond
-        else Normal None
-      in
-      loop cond
-  | PrintStmt expr ->
-      let () = eval expr ctx |> string_of_ty |> print_endline in
-      Normal None
-  | IfStmt (cond, if_stmt, else_stmt) -> (
-      if eval cond ctx |> bool_of_ty then exec if_stmt ctx
-      else
-        match else_stmt with Some stmt -> exec stmt ctx | None -> Normal None)
+let exec stmt ctx =
+  let rec exec' = function
+    | VarStmt (VarDeclaration (iden, expr)) ->
+        let value = eval expr ctx in
+        let () = add_var ctx iden value in
+        Normal None
+    | ExprStmt expr ->
+        let value = eval expr ctx in
+        Normal (Some value)
+    | IterationStmt (WhileStmt (cond, body)) ->
+        let rec loop cond =
+          if eval cond ctx |> bool_of_ty then
+            let _ = exec' body in
+            loop cond
+          else Normal None
+        in
+        loop cond
+    | PrintStmt expr ->
+        let () = eval expr ctx |> string_of_ty |> print_endline in
+        Normal None
+    | IfStmt (cond, if_stmt, else_stmt) -> (
+        if eval cond ctx |> bool_of_ty then exec' if_stmt
+        else
+          match else_stmt with Some stmt -> exec' stmt | None -> Normal None)
+    | Block stmts -> stmt_list stmts
+  and stmt_list = function
+    | [] -> Normal None
+    | [ stmt ] -> exec' stmt
+    | hd :: tl -> (
+        match exec' hd with Normal _ -> stmt_list tl | Abrupt -> Abrupt)
+  in
+
+  exec' stmt
 
 let declare fn _ctx =
   let _iden, args, _block = fn in
