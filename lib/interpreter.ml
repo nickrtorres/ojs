@@ -13,8 +13,7 @@ let eval expr ctx =
         match (number_of_ty left, number_of_ty right) with
         | n, _ when Float.is_nan n -> None
         | _, n when Float.is_nan n -> None
-        | z, _ when z = Float.zero -> Some false
-        | _, z when z = Float.zero -> Some false
+        | 0.0, 0.0 -> Some false
         | inf, _ when inf = Float.infinity -> Some false
         | _, inf when inf = Float.infinity -> Some true
         | inf, _ when inf = Float.neg_infinity -> Some true
@@ -62,15 +61,14 @@ let eval expr ctx =
   and shift = function AddExpr expr -> add expr
   and add = function
     | MultExpr expr -> mult expr
-    | Add (lhs, rhs) -> (
+    | Add (lhs, rhs) ->
         let lhs = add lhs in
         let rhs = mult rhs in
-        match (lhs, rhs) with
-        | TyNumber lhs, TyNumber rhs -> TyNumber (lhs +. rhs)
-        | TyReference (TyNumber value, _), TyNumber rhs ->
-            TyNumber (value +. rhs)
-        | _ -> failwith "todo!")
-    | Sub (_, _) -> failwith "todo!"
+        TyNumber (number_of_ty lhs +. number_of_ty rhs)
+    | Sub (lhs, rhs) ->
+        let lhs = add lhs in
+        let rhs = mult rhs in
+        TyNumber (number_of_ty lhs -. number_of_ty rhs)
   and mult = function UnaryExpr expr -> unary expr
   and unary = function PostfixExpr expr -> postfix expr
   and postfix = function LhsExpr expr -> lhs expr
