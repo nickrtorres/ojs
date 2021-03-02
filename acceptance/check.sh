@@ -1,9 +1,7 @@
 #!/bin/sh -e
 
-WD="$PWD"
-
 run() {
-  cd ../ && dune exec bin/ojs.exe -- "${WD}/$1"
+  dune exec ../bin/ojs.exe -- "$1" 2> /dev/null
 }
 
 tfail() {
