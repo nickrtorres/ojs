@@ -13,7 +13,8 @@ let eval expr ctx =
         match (number_of_ty left, number_of_ty right) with
         | n, _ when Float.is_nan n -> None
         | _, n when Float.is_nan n -> None
-        | 0.0, 0.0 -> Some false
+        | z, _ when z = Float.zero -> Some false
+        | _, z when z = Float.zero -> Some false
         | inf, _ when inf = Float.infinity -> Some false
         | _, inf when inf = Float.infinity -> Some true
         | inf, _ when inf = Float.neg_infinity -> Some true
