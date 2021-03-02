@@ -16,14 +16,22 @@ tfail() {
   printf "\tgot: %s\n" "$actual"
 }
 
+total=0
+passed=0
+
 for f in ./js/*.js
 do
+  total=$((total + 1))
   expected=$(echo "${f%.js}.out" | sed "s,./js/,./out/,g")
   actual=$(run "$f")
 
   if ! echo "$actual" | cmp -s "$expected"
   then
     tfail "$f" "$actual" "$expected"
+  else
+    passed=$((passed + 1))
   fi
 
 done
+
+echo "$passed / $total tests passed."

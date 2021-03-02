@@ -3,6 +3,7 @@ type js_type =
   | TyNumber of float
   | TyUndefined
   | TyReference of js_type * string
+  | TyString of string
 
 (* 11.1 -- FIXME: incomplete *)
 type primary_expr = Literal of js_type | Identifier of string
@@ -36,6 +37,9 @@ type shift_expr = AddExpr of add_expr
 type relational_expr =
   | ShiftExpr of shift_expr
   | LtExpr of relational_expr * shift_expr
+  | GtExpr of relational_expr * shift_expr
+  | LteExpr of relational_expr * shift_expr
+  | GteExpr of relational_expr * shift_expr
 
 (* 11.9 -- FIXME incomplete *)
 type equality_expr = RelationalExpr of relational_expr
@@ -104,6 +108,7 @@ let rec string_of_ty = function
   | TyBoolean b -> string_of_bool b
   | TyUndefined -> "undefined"
   | TyReference (r, _) -> string_of_ty r
+  | TyString s -> s
 
 (* 9.1 ToPrimitive FIXME handle objects *)
 let primitive_of_ty ty = ty
@@ -114,6 +119,15 @@ let rec bool_of_ty = function
   | TyBoolean b -> b
   | TyUndefined -> false
   | TyReference (r, _) -> bool_of_ty r
+  | TyString s -> String.length s <> 0
+
+let rec number_of_ty = function
+  | TyUndefined -> Float.nan
+  | TyBoolean true -> 1.
+  | TyBoolean false -> 0.
+  | TyNumber n -> n
+  | TyString s -> float_of_string s
+  | TyReference (r, _) -> number_of_ty r
 
 let string_of_completion = function
   | Normal (Some ty) -> string_of_ty ty

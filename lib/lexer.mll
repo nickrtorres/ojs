@@ -16,6 +16,9 @@ rule token = parse
   | '('                  { LPAREN }
   | ')'                  { RPAREN }
   | '<'                  { LT }
+  | '>'                  { GT }
+  | "<="                 { LTE }
+  | ">="                 { GTE }
   | "while"              { WHILE }
   | "print"              { PRINT }
   | '='                  { EQ }

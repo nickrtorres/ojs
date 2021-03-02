@@ -6,6 +6,20 @@ let add_var ctx iden value = Hashtbl.add ctx.var_object iden value
 let update_var ctx iden value = Hashtbl.replace ctx.var_object iden value
 
 let eval expr ctx =
+  let abs_relational_comp left right =
+    match (primitive_of_ty left, primitive_of_ty right) with
+    | TyString left, TyString right -> Some (left < right)
+    | left, right -> (
+        match (number_of_ty left, number_of_ty right) with
+        | n, _ when Float.is_nan n -> None
+        | _, n when Float.is_nan n -> None
+        | 0.0, 0.0 -> Some false
+        | inf, _ when inf = Float.infinity -> Some false
+        | _, inf when inf = Float.infinity -> Some true
+        | inf, _ when inf = Float.neg_infinity -> Some true
+        | _, inf when inf = Float.neg_infinity -> Some false
+        | left, right -> Some (left < right))
+  in
   let rec assign = function
     | ConditionalExpr expr -> conditional expr
     | SimpleAssignExpr (iden, op, value) -> (
@@ -28,19 +42,22 @@ let eval expr ctx =
   and equality = function RelationalExpr expr -> relational expr
   and relational = function
     | ShiftExpr expr -> shift expr
-    | LtExpr (left, right) ->
-        (* FIXME : implement abstract relational comparison algorithm *)
-        let left =
-          match relational left with
-          | TyNumber n | TyReference (TyNumber n, _) -> n
-          | _ -> failwith "todo!"
-        in
-        let right =
-          match shift right with
-          | TyNumber n | TyReference (TyNumber n, _) -> n
-          | _ -> failwith "todo!"
-        in
-        TyBoolean (left < right)
+    | LtExpr (left, right) -> (
+        match abs_relational_comp (relational left) (shift right) with
+        | None | Some false -> TyBoolean false
+        | Some true -> TyBoolean true)
+    | GtExpr (left, right) -> (
+        match abs_relational_comp (shift right) (relational left) with
+        | None | Some false -> TyBoolean false
+        | Some true -> TyBoolean true)
+    | LteExpr (left, right) -> (
+        match abs_relational_comp (shift right) (relational left) with
+        | None | Some true -> TyBoolean false
+        | Some false -> TyBoolean true)
+    | GteExpr (left, right) -> (
+        match abs_relational_comp (relational left) (shift right) with
+        | None | Some true -> TyBoolean false
+        | Some false -> TyBoolean true)
   and shift = function AddExpr expr -> add expr
   and add = function
     | MultExpr expr -> mult expr
