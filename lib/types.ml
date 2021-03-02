@@ -1,11 +1,11 @@
-type js_base_type =
+type js_type =
   | TyBoolean of bool
   | TyNumber of float
   | TyUndefined
-  | TyReference of js_base_type * string
+  | TyReference of js_type * string
 
 (* 11.1 -- FIXME: incomplete *)
-type primary_expr = Literal of js_base_type | Identifier of string
+type primary_expr = Literal of js_type | Identifier of string
 
 (* 11.2 -- FIXME: incomplete *)
 type member_expr = PrimaryExpr of primary_expr
@@ -68,10 +68,12 @@ type expression = assign_expr
 (* 14 -- FIXME incomplete *)
 type var_stmt = VarDeclaration of string * assign_expr
 
+(* NB: print is non-standard but can be seen in the og impl of JS. *)
 type stmt =
   | VarStmt of var_stmt
   | ExprStmt of expression
   | IterationStmt of iteration_stmt
+  | PrintStmt of expression
 
 (* 12.6 *)
 and iteration_stmt = WhileStmt of expression * stmt
@@ -91,25 +93,28 @@ type source_elements =
 type program = source_elements
 
 (* 10 -- FIXME incomplete *)
-type execution_ctx = { var_object : (string, js_base_type) Hashtbl.t }
+type execution_ctx = { var_object : (string, js_type) Hashtbl.t }
 
 let mk_execution_ctx () = { var_object = Hashtbl.create 100 }
 
-type completion = Normal of js_base_type option
+type completion = Normal of js_type option
 
-let rec string_of_base_ty = function
-  | TyNumber n -> string_of_float n
+let rec string_of_ty = function
+  | TyNumber n -> Printf.sprintf "%g" n
   | TyBoolean b -> string_of_bool b
   | TyUndefined -> "undefined"
-  | TyReference (r, _) -> string_of_base_ty r
+  | TyReference (r, _) -> string_of_ty r
+
+(* 9.1 ToPrimitive FIXME handle objects *)
+let primitive_of_ty ty = ty
 
 (* 9.2 ToBoolean *)
-let rec bool_of_base_ty = function
+let rec bool_of_ty = function
   | TyNumber n -> n != 0.
   | TyBoolean b -> b
   | TyUndefined -> false
-  | TyReference (r, _) -> bool_of_base_ty r
+  | TyReference (r, _) -> bool_of_ty r
 
 let string_of_completion = function
-  | Normal (Some base_ty) -> string_of_base_ty base_ty
+  | Normal (Some ty) -> string_of_ty ty
   | Normal None -> "undefined"

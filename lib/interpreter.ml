@@ -78,12 +78,15 @@ let rec exec stmt ctx =
       Normal (Some value)
   | IterationStmt (WhileStmt (cond, body)) ->
       let rec loop cond =
-        if eval cond ctx |> bool_of_base_ty then
+        if eval cond ctx |> bool_of_ty then
           let _ = exec body ctx in
           loop cond
         else Normal None
       in
       loop cond
+  | PrintStmt expr ->
+      let () = eval expr ctx |> string_of_ty |> print_endline in
+      Normal None
 
 let declare fn _ctx =
   let _iden, args, _block = fn in

@@ -2,7 +2,7 @@
 %}
 
 %start program
-%token VAR PLUS EQ MINUS EOF LPAREN RPAREN WHILE LT
+%token VAR PLUS EQ MINUS EOF LPAREN RPAREN WHILE LT PRINT
 %token <bool>   BOOL
 %token <string> IDEN
 %token <float>  NUM
@@ -21,15 +21,19 @@ source_element     : stmt                           { Types.Stmt($1)            
 stmt               : var_stmt                       { Types.VarStmt($1)            }
                    | expr_stmt                      { Types.ExprStmt($1)           }
                    | iteration_stmt                 { Types.IterationStmt($1)      }
+                   | print_stmt                     { Types.PrintStmt($1)          }
   ;
 
 var_stmt           : VAR IDEN EQ assign_expr        { Types.VarDeclaration($2, $4) }
   ;
 
-expr_stmt          : assign_expr                     { $1                          }
+expr_stmt          : assign_expr                    { $1                           }
   ;
 
 iteration_stmt     : WHILE LPAREN expr_stmt RPAREN stmt { Types.WhileStmt($3, $5)  }
+  ;
+
+print_stmt         : PRINT LPAREN expr_stmt RPAREN   { $3                          }
   ;
 
 assign_expr        : conditional_expr               { Types.ConditionalExpr($1)    }

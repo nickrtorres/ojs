@@ -3,7 +3,7 @@ open Types
 type attribute = ReadOnly | DontEnum | DontDelete | Internal
 
 type jsobject = {
-  properties : (string, js_base_type) Hashtbl.t;
+  properties : (string, js_type) Hashtbl.t;
   prototype : jsobject option;
 }
 
