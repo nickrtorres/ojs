@@ -6,6 +6,7 @@ let add_var ctx iden value = Hashtbl.add ctx.var_object iden value
 let update_var ctx iden value = Hashtbl.replace ctx.var_object iden value
 
 let eval expr ctx =
+  (* 11.8.5 *)
   let abs_relational_comp left right =
     match (primitive_of_ty left, primitive_of_ty right) with
     | TyString left, TyString right -> Some (left < right)
@@ -103,6 +104,10 @@ let rec exec stmt ctx =
   | PrintStmt expr ->
       let () = eval expr ctx |> string_of_ty |> print_endline in
       Normal None
+  | IfStmt (cond, if_stmt, else_stmt) -> (
+      if eval cond ctx |> bool_of_ty then exec if_stmt ctx
+      else
+        match else_stmt with Some stmt -> exec stmt ctx | None -> Normal None)
 
 let declare fn _ctx =
   let _iden, args, _block = fn in

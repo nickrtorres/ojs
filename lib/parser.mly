@@ -2,7 +2,7 @@
 %}
 
 %start program
-%token VAR PLUS EQ MINUS EOF LPAREN RPAREN WHILE LT GT LTE GTE PRINT
+%token VAR PLUS EQ MINUS EOF LPAREN RPAREN WHILE LT GT LTE GTE PRINT IF ELSE
 %token <bool>   BOOL
 %token <string> IDEN
 %token <float>  NUM
@@ -22,6 +22,7 @@ stmt               : var_stmt                       { Types.VarStmt($1)         
                    | expr_stmt                      { Types.ExprStmt($1)           }
                    | iteration_stmt                 { Types.IterationStmt($1)      }
                    | print_stmt                     { Types.PrintStmt($1)          }
+                   | if_stmt                        { $1                           }
   ;
 
 var_stmt           : VAR IDEN EQ assign_expr        { Types.VarDeclaration($2, $4) }
@@ -34,6 +35,15 @@ iteration_stmt     : WHILE LPAREN expr_stmt RPAREN stmt { Types.WhileStmt($3, $5
   ;
 
 print_stmt         : PRINT LPAREN expr_stmt RPAREN   { $3                          }
+  ;
+
+/* this grammar rule leads a shift/reduce conflict
+ * (https://en.wikipedia.org/wiki/Dangling_else),
+ *
+ * but this is how it's given in the spec so idk
+ */
+if_stmt            : IF LPAREN expr_stmt RPAREN stmt { Types.IfStmt($3, $5, None)  }
+                   | IF LPAREN expr_stmt RPAREN stmt ELSE stmt { Types.IfStmt($3, $5, Some $7) }
   ;
 
 assign_expr        : conditional_expr               { Types.ConditionalExpr($1)    }

@@ -78,6 +78,7 @@ type stmt =
   | ExprStmt of expression
   | IterationStmt of iteration_stmt
   | PrintStmt of expression
+  | IfStmt of expression * stmt * stmt option
 
 (* 12.6 *)
 and iteration_stmt = WhileStmt of expression * stmt

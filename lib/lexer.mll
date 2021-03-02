@@ -21,6 +21,8 @@ rule token = parse
   | ">="                 { GTE }
   | "while"              { WHILE }
   | "print"              { PRINT }
+  | "if"                 { IF }
+  | "else"               { ELSE }
   | '='                  { EQ }
   | ['A' - 'Z' 'a' - 'z'] ['A' - 'Z' 'a' - 'z' '0' - '9' '_'] * as iden  { IDEN(iden) }
   | eof                  { EOF }
