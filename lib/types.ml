@@ -33,7 +33,7 @@ type add_expr =
 (* 11.7 -- FIXME incomplete *)
 type shift_expr = AddExpr of add_expr
 
-(* 11.8 -- FIXME incomplete *)
+(* 11.8 *)
 type relational_expr =
   | ShiftExpr of shift_expr
   | LtExpr of relational_expr * shift_expr
