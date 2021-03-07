@@ -28,7 +28,7 @@ let eval expr ctx =
         match op with
         | Assign ->
             (* TODO FIXME undefined variable *)
-            let () = JsObject.put iden value ctx.var_object in
+            let () = Ctx.put iden value ctx in
             value)
   and conditional = function LogicalOrExpr expr -> logical_or expr
   and logical_or = function LogicalAndExpr expr -> logical_and expr
@@ -72,18 +72,18 @@ let eval expr ctx =
   and lhs = function NewExpr expr -> newe expr | CallExpr expr -> call expr
   and call expr =
     let meme, args = expr in
-    let args = List.map assign args in
-    let obj =
+    let _args = List.map assign args in
+    let _obj =
       match member meme with
       | TyObject obj -> obj
       | _ -> failwith "not an object!"
     in
-    JsObject.call args obj
+    failwith "todo"
   and newe = function MemberExpr expr -> member expr
   and member = function PrimaryExpr expr -> primary expr
   and primary = function
     | Literal ty -> ty
-    | Identifier iden -> TyReference (JsObject.get iden ctx.var_object, iden)
+    | Identifier iden -> TyReference (Ctx.get iden ctx, iden)
   in
 
   assign expr
@@ -92,7 +92,7 @@ let exec stmt ctx =
   let rec exec' = function
     | VarStmt (VarDeclaration (iden, expr)) ->
         let value = eval expr ctx in
-        let () = JsObject.put iden value ctx.var_object in
+        let () = Ctx.put iden value ctx in
         Normal None
     | ExprStmt expr ->
         let value = eval expr ctx in

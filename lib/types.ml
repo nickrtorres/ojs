@@ -93,13 +93,6 @@ and source_elements =
   | SourceElements of source_elements * source_element
   | SourceElement of source_element
 
-and program = source_elements
-
-(* 10 -- FIXME incomplete *)
-and execution_ctx = { var_object : js_object }
-
-and completion = Normal of js_type option | Abrupt
-
 and js_type =
   | TyBoolean of bool
   | TyNumber of float
@@ -114,9 +107,9 @@ and js_object = {
   call : block option;
 }
 
-type attribute = ReadOnly | DontEnum | DontDelete | Internal
+type program = source_elements
 
-type formal_parameters = string list
+type completion = Normal of js_type option | Abrupt
 
 module JsObject = struct
   let new_object () =
@@ -135,8 +128,6 @@ module JsObject = struct
         | None -> TyUndefined)
 
   let with_call block obj = { obj with call = block }
-
-  let call _args _obj = TyUndefined
 
   (* FIXME 8.6.2.3 *)
   let can_put _name _obj = true
@@ -157,7 +148,15 @@ module JsObject = struct
     Hashtbl.mem obj.properties name || lookup obj.prototype
 end
 
-let mk_execution_ctx () = { var_object = JsObject.new_object () }
+module Ctx = struct
+  type opaque = { variable_object : js_object }
+
+  let new_ctx () = { variable_object = JsObject.new_object () }
+
+  let put name value ctx = JsObject.put name value ctx.variable_object
+
+  let get name ctx = JsObject.get name ctx.variable_object
+end
 
 let rec string_of_ty = function
   | TyNumber n -> Printf.sprintf "%g" n

@@ -7,7 +7,7 @@ let main fname =
     let ic = open_in fname in
     let lexbuf = Lexing.from_channel ic in
     let program = Parser.program Lexer.token lexbuf in
-    let ctx = mk_execution_ctx () in
+    let ctx = Ctx.new_ctx () in
     let _ = run program ctx in
     let () = close_in ic in
     0
@@ -17,7 +17,7 @@ let main fname =
 
 let repl () =
   try
-    let ctx = mk_execution_ctx () in
+    let ctx = Ctx.new_ctx () in
     let rec repl' () =
       let () = print_string "# " in
       let lexbuf = Lexing.from_string (read_line ()) in
