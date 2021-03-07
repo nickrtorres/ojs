@@ -1,9 +1,6 @@
 open Types
 
-let add_var ctx iden value = Hashtbl.add ctx.var_object iden value
-
-(* FIXME undefined if var does not exist *)
-let update_var ctx iden value = Hashtbl.replace ctx.var_object iden value
+let add_var ctx name value = put name value ctx.var_object
 
 let eval expr ctx =
   (* 11.8.5 *)
@@ -32,7 +29,8 @@ let eval expr ctx =
         let value = assign value in
         match op with
         | Assign ->
-            let () = update_var ctx iden value in
+            (* TODO FIXME undefined variable *)
+            let () = put iden value ctx.var_object in
             value)
   and conditional = function LogicalOrExpr expr -> logical_or expr
   and logical_or = function LogicalAndExpr expr -> logical_and expr
@@ -88,7 +86,7 @@ let eval expr ctx =
   and primary = function
     | Literal ty -> ty
     (* FIXME "The result of an identifier is always a value of type Reference" *)
-    | Identifier iden -> TyReference (Hashtbl.find ctx.var_object iden, iden)
+    | Identifier iden -> TyReference (get iden ctx.var_object, iden)
   in
 
   assign expr
@@ -97,7 +95,7 @@ let exec stmt ctx =
   let rec exec' = function
     | VarStmt (VarDeclaration (iden, expr)) ->
         let value = eval expr ctx in
-        let () = add_var ctx iden value in
+        let () = put iden value ctx.var_object in
         Normal None
     | ExprStmt expr ->
         let value = eval expr ctx in
@@ -153,60 +151,3 @@ let run program ctx =
   in
 
   run' program
-
-let%test "basic var" =
-  let iden = "foo" in
-  let expr =
-    ConditionalExpr
-      (LogicalOrExpr
-         (LogicalAndExpr
-            (BitwiseOrExpr
-               (BitwiseXorExpr
-                  (BitwiseAndExpr
-                     (EqualityExpr
-                        (RelationalExpr
-                           (ShiftExpr
-                              (AddExpr
-                                 (MultExpr
-                                    (UnaryExpr
-                                       (PostfixExpr
-                                          (LhsExpr
-                                             (NewExpr
-                                                (MemberExpr
-                                                   (PrimaryExpr
-                                                      (Literal (TyNumber 42.))))))))))))))))))
-  in
-  let stmt = VarStmt (VarDeclaration (iden, expr)) in
-  let ctx = { var_object = Hashtbl.create 100 } in
-  let _ = exec stmt ctx in
-  Hashtbl.find ctx.var_object iden = TyNumber 42.
-
-let%test "basic var" =
-  let iden = "foo" in
-  let addend =
-    MultExpr
-      (UnaryExpr
-         (PostfixExpr
-            (LhsExpr
-               (NewExpr (MemberExpr (PrimaryExpr (Literal (TyNumber 10.))))))))
-  in
-  let augend =
-    UnaryExpr
-      (PostfixExpr
-         (LhsExpr (NewExpr (MemberExpr (PrimaryExpr (Literal (TyNumber 32.)))))))
-  in
-  let expr =
-    ConditionalExpr
-      (LogicalOrExpr
-         (LogicalAndExpr
-            (BitwiseOrExpr
-               (BitwiseXorExpr
-                  (BitwiseAndExpr
-                     (EqualityExpr
-                        (RelationalExpr
-                           (ShiftExpr (AddExpr (Add (addend, augend)))))))))))
-  in
-  let stmt = VarStmt (VarDeclaration (iden, expr)) in
-  let ctx = { var_object = Hashtbl.create 100 } in
-  let _ = exec stmt ctx in
-  Hashtbl.find ctx.var_object iden = TyNumber 42.

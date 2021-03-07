@@ -96,7 +96,7 @@ and source_elements =
 and program = source_elements
 
 (* 10 -- FIXME incomplete *)
-and execution_ctx = { var_object : (string, js_type) Hashtbl.t }
+and execution_ctx = { var_object : js_object }
 
 and completion = Normal of js_type option | Abrupt
 
@@ -118,10 +118,10 @@ type attribute = ReadOnly | DontEnum | DontDelete | Internal
 
 type formal_parameters = string list
 
-let mk_execution_ctx () = { var_object = Hashtbl.create 100 }
-
 let new_object () =
   { properties = Hashtbl.create 100; prototype = None; call = None }
+
+let mk_execution_ctx () = { var_object = new_object () }
 
 let new_object_with_prototype prototype =
   { properties = Hashtbl.create 100; prototype = Some prototype; call = None }
