@@ -2,9 +2,11 @@
 %}
 
 %start program
+%token COMMA
 %token ELSE
 %token EOF
 %token EQ
+%token FUNCTION
 %token GT
 %token GTE
 %token IF
@@ -32,6 +34,7 @@ source_elements    : source_element                 { Types.SourceElement($1)   
   ;
 
 source_element     : stmt                           { Types.Stmt($1)               }
+                   | function_declaration           { Types.FunctionDeclaration($1) }
   ;
 
 stmt               : var_stmt                       { Types.VarStmt($1)            }
@@ -41,6 +44,13 @@ stmt               : var_stmt                       { Types.VarStmt($1)         
                    | if_stmt                        { $1                           }
                    | block_stmt                     { Types.Block($1) }
   ;
+
+function_declaration : FUNCTION IDEN LPAREN iden_list RPAREN block_stmt { ($2, List.rev $4, $6) }
+                     | FUNCTION IDEN LPAREN RPAREN block_stmt           { ($2, [], $5) }
+  ;
+
+iden_list          : iden_list COMMA IDEN           { $3 :: $1 }
+                   | IDEN                           { $1 :: [] }
 
 block_stmt         : LBRACE stmt_list RBRACE        { List.rev $2 }
                    | LBRACE RBRACE                  { [] }

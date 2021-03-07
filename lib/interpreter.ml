@@ -73,7 +73,16 @@ let eval expr ctx =
   and mult = function UnaryExpr expr -> unary expr
   and unary = function PostfixExpr expr -> postfix expr
   and postfix = function LhsExpr expr -> lhs expr
-  and lhs = function NewExpr expr -> newe expr
+  and lhs = function NewExpr expr -> newe expr | CallExpr expr -> call expr
+  and call expr =
+    let meme, args = expr in
+    let args = List.map assign args in
+    let obj =
+      match member meme with
+      | TyObject obj -> obj
+      | _ -> failwith "not an object!"
+    in
+    js_object_call args obj
   and newe = function MemberExpr expr -> member expr
   and member = function PrimaryExpr expr -> primary expr
   and primary = function
@@ -119,17 +128,11 @@ let exec stmt ctx =
   exec' stmt
 
 let declare fn _ctx =
-  let _iden, args, _block = fn in
-  let string_of_args xs =
-    let rec string_of_args' xs acc =
-      match xs with
-      | [] -> acc
-      | [ x ] -> acc ^ x
-      | hd :: tl -> string_of_args' tl (acc ^ hd ^ ",")
-    in
-    string_of_args' xs ""
+  let _iden, args, block = fn in
+  let _fn_obj =
+    new_object () |> with_call (Some block)
+    |> with_property "length" (TyNumber (List.length args |> float_of_int))
   in
-  let _p = string_of_args args in
   ()
 
 let run program ctx =
@@ -142,7 +145,11 @@ let run program ctx =
         (* FIXME how to return the first Completion? *)
         let _ = run' se in
         exec stmt ctx
-    | _ -> failwith "todo!"
+    | SourceElements (se, FunctionDeclaration fn) ->
+        (* FIXME how to return the first Completion? *)
+        let _ = run' se in
+        let () = declare fn ctx in
+        Normal None
   in
 
   run' program

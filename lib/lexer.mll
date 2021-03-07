@@ -8,6 +8,7 @@ rule token = parse
   | [' ']                { token lexbuf }
   (* FIXME floats! *)
   | ['0' - '9'] * as n   { NUM (float_of_string n) }
+  | ','                  { COMMA }
   | '+'                  { PLUS }
   | '-'                  { MINUS }
   | '{'                  { LBRACE }
@@ -21,6 +22,7 @@ rule token = parse
   | '='                  { EQ }
   | "else"               { ELSE }
   | "false"              { BOOL(false) }
+  | "function"           { FUNCTION }
   | "if"                 { IF }
   | "print"              { PRINT }
   | "true"               { BOOL(true) }

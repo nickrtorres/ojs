@@ -1,40 +1,37 @@
-type js_type =
-  | TyBoolean of bool
-  | TyNumber of float
-  | TyUndefined
-  | TyReference of js_type * string
-  | TyString of string
-
 (* 11.1 -- FIXME: incomplete *)
 type primary_expr = Literal of js_type | Identifier of string
 
 (* 11.2 -- FIXME: incomplete *)
-type member_expr = PrimaryExpr of primary_expr
+and member_expr = PrimaryExpr of primary_expr
 
-type new_expr = MemberExpr of member_expr
+and new_expr = MemberExpr of member_expr
 
-type lhs_expr = NewExpr of new_expr
+and arguments = assign_expr list
+
+and call_expr = member_expr * arguments
+
+and lhs_expr = NewExpr of new_expr | CallExpr of call_expr
 
 (* 11.3 -- FIXME: incomplete *)
-type postfix_expr = LhsExpr of lhs_expr
+and postfix_expr = LhsExpr of lhs_expr
 
 (* 11.4 -- FIXME: incomplete *)
-type unary_expr = PostfixExpr of postfix_expr
+and unary_expr = PostfixExpr of postfix_expr
 
 (* 11.5 -- FIXME: incomplete *)
-type mult_expr = UnaryExpr of unary_expr
+and mult_expr = UnaryExpr of unary_expr
 
 (* 11.6 *)
-type add_expr =
+and add_expr =
   | MultExpr of mult_expr
   | Add of add_expr * mult_expr
   | Sub of add_expr * mult_expr
 
 (* 11.7 -- FIXME incomplete *)
-type shift_expr = AddExpr of add_expr
+and shift_expr = AddExpr of add_expr
 
 (* 11.8 *)
-type relational_expr =
+and relational_expr =
   | ShiftExpr of shift_expr
   | LtExpr of relational_expr * shift_expr
   | GtExpr of relational_expr * shift_expr
@@ -42,38 +39,38 @@ type relational_expr =
   | GteExpr of relational_expr * shift_expr
 
 (* 11.9 -- FIXME incomplete *)
-type equality_expr = RelationalExpr of relational_expr
+and equality_expr = RelationalExpr of relational_expr
 
 (* 11.10 -- FIXME incomplete *)
-type bitwise_and_expr = EqualityExpr of equality_expr
+and bitwise_and_expr = EqualityExpr of equality_expr
 
-type bitwise_xor_expr = BitwiseAndExpr of bitwise_and_expr
+and bitwise_xor_expr = BitwiseAndExpr of bitwise_and_expr
 
-type bitwise_or_expr = BitwiseXorExpr of bitwise_xor_expr
+and bitwise_or_expr = BitwiseXorExpr of bitwise_xor_expr
 
 (* 11.10 -- FIXME incomplete *)
-type logical_and_expr = BitwiseOrExpr of bitwise_or_expr
+and logical_and_expr = BitwiseOrExpr of bitwise_or_expr
 
 (* 11.11 -- FIXME incomplete *)
-type logical_or_expr = LogicalAndExpr of logical_and_expr
+and logical_or_expr = LogicalAndExpr of logical_and_expr
 
 (* 11.12 -- FIXME conditional_expr *)
-type conditional_expr = LogicalOrExpr of logical_or_expr
+and conditional_expr = LogicalOrExpr of logical_or_expr
 
 (* 11.13 -- FIXME incomplete *)
-type assign_expr =
+and assign_expr =
   | ConditionalExpr of conditional_expr
   | SimpleAssignExpr of lhs_expr * assign_op * assign_expr
 
 and assign_op = Assign
 
-type expression = assign_expr
+and expression = assign_expr
 
 (* 14 -- FIXME incomplete *)
-type var_stmt = VarDeclaration of string * assign_expr
+and var_stmt = VarDeclaration of string * assign_expr
 
 (* NB: print is non-standard but can be seen in the og impl of JS. *)
-type stmt =
+and stmt =
   | VarStmt of var_stmt
   | ExprStmt of expression
   | IterationStmt of iteration_stmt
@@ -86,24 +83,78 @@ and iteration_stmt = WhileStmt of expression * stmt
 
 and block = stmt list
 
-type function_declaration = string * string list * block
+and function_declaration = string * string list * block
 
-type source_element =
+and source_element =
   | Stmt of stmt
   | FunctionDeclaration of function_declaration
 
-type source_elements =
+and source_elements =
   | SourceElements of source_elements * source_element
   | SourceElement of source_element
 
-type program = source_elements
+and program = source_elements
 
 (* 10 -- FIXME incomplete *)
-type execution_ctx = { var_object : (string, js_type) Hashtbl.t }
+and execution_ctx = { var_object : (string, js_type) Hashtbl.t }
+
+and completion = Normal of js_type option | Abrupt
+
+and js_type =
+  | TyBoolean of bool
+  | TyNumber of float
+  | TyUndefined
+  | TyReference of js_type * string
+  | TyString of string
+  | TyObject of js_object
+
+and js_object = {
+  properties : (string, js_type) Hashtbl.t;
+  prototype : js_object option;
+  call : block option;
+}
+
+type attribute = ReadOnly | DontEnum | DontDelete | Internal
+
+type formal_parameters = string list
 
 let mk_execution_ctx () = { var_object = Hashtbl.create 100 }
 
-type completion = Normal of js_type option | Abrupt
+let new_object () =
+  { properties = Hashtbl.create 100; prototype = None; call = None }
+
+let new_object_with_prototype prototype =
+  { properties = Hashtbl.create 100; prototype = Some prototype; call = None }
+
+(* 8.6.2.1 *)
+let rec get name obj =
+  match Hashtbl.find_opt obj.properties name with
+  | Some value -> value
+  | None -> (
+      match obj.prototype with
+      | Some proto -> get name proto
+      | None -> TyUndefined)
+
+let with_call block obj = { obj with call = block }
+
+let js_object_call _args _obj = TyUndefined
+
+(* FIXME 8.6.2.3 *)
+let can_put _name _obj = true
+
+let put name value obj =
+  if can_put name obj then Hashtbl.replace obj.properties name value else ()
+
+let with_property name value obj =
+  let () = put name value obj in
+  obj
+
+let has_property name obj =
+  let rec lookup = function
+    | None -> false
+    | Some proto -> Hashtbl.mem proto.properties name || lookup proto.prototype
+  in
+  Hashtbl.mem obj.properties name || lookup obj.prototype
 
 let rec string_of_ty = function
   | TyNumber n -> Printf.sprintf "%g" n
@@ -111,6 +162,7 @@ let rec string_of_ty = function
   | TyUndefined -> "undefined"
   | TyReference (r, _) -> string_of_ty r
   | TyString s -> s
+  | TyObject _ -> failwith "todo"
 
 (* 9.1 ToPrimitive FIXME handle objects *)
 let primitive_of_ty ty = ty
@@ -122,6 +174,7 @@ let rec bool_of_ty = function
   | TyUndefined -> false
   | TyReference (r, _) -> bool_of_ty r
   | TyString s -> String.length s <> 0
+  | TyObject _ -> failwith "todo"
 
 let rec number_of_ty = function
   | TyUndefined -> Float.nan
@@ -130,8 +183,33 @@ let rec number_of_ty = function
   | TyNumber n -> n
   | TyString s -> float_of_string s
   | TyReference (r, _) -> number_of_ty r
+  | TyObject _ -> failwith "todo"
 
 let string_of_completion = function
   | Normal (Some ty) -> string_of_ty ty
   | Normal None -> "undefined"
   | Abrupt -> "abrupt"
+
+(* Tests *)
+let%test "add properties" =
+  let obj = new_object () in
+  let () = put "foo" (TyNumber 42.) obj in
+  get "foo" obj = TyNumber 42.
+
+let%test "update properties" =
+  let obj = new_object () in
+  let () = put "foo" (TyNumber 100.) obj in
+  let () = put "foo" (TyNumber 42.) obj in
+  get "foo" obj = TyNumber 42.
+
+let%test "has property" =
+  let obj = new_object () in
+  let () = put "foo" (TyNumber 42.) obj in
+  has_property "foo" obj
+
+let%test "prototype properties" =
+  let a = new_object () in
+  let b = new_object_with_prototype a in
+  let c = new_object_with_prototype b in
+  let () = put "foo" (TyNumber 100.) a in
+  has_property "foo" c
