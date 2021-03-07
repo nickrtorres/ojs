@@ -1,7 +1,5 @@
 open Types
 
-let add_var ctx name value = put name value ctx.var_object
-
 let eval expr ctx =
   (* 11.8.5 *)
   let abs_relational_comp left right =
@@ -30,7 +28,7 @@ let eval expr ctx =
         match op with
         | Assign ->
             (* TODO FIXME undefined variable *)
-            let () = put iden value ctx.var_object in
+            let () = JsObject.put iden value ctx.var_object in
             value)
   and conditional = function LogicalOrExpr expr -> logical_or expr
   and logical_or = function LogicalAndExpr expr -> logical_and expr
@@ -80,13 +78,12 @@ let eval expr ctx =
       | TyObject obj -> obj
       | _ -> failwith "not an object!"
     in
-    js_object_call args obj
+    JsObject.call args obj
   and newe = function MemberExpr expr -> member expr
   and member = function PrimaryExpr expr -> primary expr
   and primary = function
     | Literal ty -> ty
-    (* FIXME "The result of an identifier is always a value of type Reference" *)
-    | Identifier iden -> TyReference (get iden ctx.var_object, iden)
+    | Identifier iden -> TyReference (JsObject.get iden ctx.var_object, iden)
   in
 
   assign expr
@@ -95,7 +92,7 @@ let exec stmt ctx =
   let rec exec' = function
     | VarStmt (VarDeclaration (iden, expr)) ->
         let value = eval expr ctx in
-        let () = put iden value ctx.var_object in
+        let () = JsObject.put iden value ctx.var_object in
         Normal None
     | ExprStmt expr ->
         let value = eval expr ctx in
@@ -128,8 +125,10 @@ let exec stmt ctx =
 let declare fn _ctx =
   let _iden, args, block = fn in
   let _fn_obj =
-    new_object () |> with_call (Some block)
-    |> with_property "length" (TyNumber (List.length args |> float_of_int))
+    JsObject.new_object ()
+    |> JsObject.with_call (Some block)
+    |> JsObject.with_property "length"
+         (TyNumber (List.length args |> float_of_int))
   in
   ()
 

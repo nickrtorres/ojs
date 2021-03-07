@@ -118,43 +118,46 @@ type attribute = ReadOnly | DontEnum | DontDelete | Internal
 
 type formal_parameters = string list
 
-let new_object () =
-  { properties = Hashtbl.create 100; prototype = None; call = None }
+module JsObject = struct
+  let new_object () =
+    { properties = Hashtbl.create 100; prototype = None; call = None }
 
-let mk_execution_ctx () = { var_object = new_object () }
+  let new_object_with_prototype prototype =
+    { properties = Hashtbl.create 100; prototype = Some prototype; call = None }
 
-let new_object_with_prototype prototype =
-  { properties = Hashtbl.create 100; prototype = Some prototype; call = None }
+  (* 8.6.2.1 *)
+  let rec get name obj =
+    match Hashtbl.find_opt obj.properties name with
+    | Some value -> value
+    | None -> (
+        match obj.prototype with
+        | Some proto -> get name proto
+        | None -> TyUndefined)
 
-(* 8.6.2.1 *)
-let rec get name obj =
-  match Hashtbl.find_opt obj.properties name with
-  | Some value -> value
-  | None -> (
-      match obj.prototype with
-      | Some proto -> get name proto
-      | None -> TyUndefined)
+  let with_call block obj = { obj with call = block }
 
-let with_call block obj = { obj with call = block }
+  let call _args _obj = TyUndefined
 
-let js_object_call _args _obj = TyUndefined
+  (* FIXME 8.6.2.3 *)
+  let can_put _name _obj = true
 
-(* FIXME 8.6.2.3 *)
-let can_put _name _obj = true
+  let put name value obj =
+    if can_put name obj then Hashtbl.replace obj.properties name value else ()
 
-let put name value obj =
-  if can_put name obj then Hashtbl.replace obj.properties name value else ()
+  let with_property name value obj =
+    let () = put name value obj in
+    obj
 
-let with_property name value obj =
-  let () = put name value obj in
-  obj
+  let has_property name obj =
+    let rec lookup = function
+      | None -> false
+      | Some proto ->
+          Hashtbl.mem proto.properties name || lookup proto.prototype
+    in
+    Hashtbl.mem obj.properties name || lookup obj.prototype
+end
 
-let has_property name obj =
-  let rec lookup = function
-    | None -> false
-    | Some proto -> Hashtbl.mem proto.properties name || lookup proto.prototype
-  in
-  Hashtbl.mem obj.properties name || lookup obj.prototype
+let mk_execution_ctx () = { var_object = JsObject.new_object () }
 
 let rec string_of_ty = function
   | TyNumber n -> Printf.sprintf "%g" n
@@ -192,24 +195,24 @@ let string_of_completion = function
 
 (* Tests *)
 let%test "add properties" =
-  let obj = new_object () in
-  let () = put "foo" (TyNumber 42.) obj in
-  get "foo" obj = TyNumber 42.
+  let obj = JsObject.new_object () in
+  let () = JsObject.put "foo" (TyNumber 42.) obj in
+  JsObject.get "foo" obj = TyNumber 42.
 
 let%test "update properties" =
-  let obj = new_object () in
-  let () = put "foo" (TyNumber 100.) obj in
-  let () = put "foo" (TyNumber 42.) obj in
-  get "foo" obj = TyNumber 42.
+  let obj = JsObject.new_object () in
+  let () = JsObject.put "foo" (TyNumber 100.) obj in
+  let () = JsObject.put "foo" (TyNumber 42.) obj in
+  JsObject.get "foo" obj = TyNumber 42.
 
 let%test "has property" =
-  let obj = new_object () in
-  let () = put "foo" (TyNumber 42.) obj in
-  has_property "foo" obj
+  let obj = JsObject.new_object () in
+  let () = JsObject.put "foo" (TyNumber 42.) obj in
+  JsObject.has_property "foo" obj
 
 let%test "prototype properties" =
-  let a = new_object () in
-  let b = new_object_with_prototype a in
-  let c = new_object_with_prototype b in
-  let () = put "foo" (TyNumber 100.) a in
-  has_property "foo" c
+  let a = JsObject.new_object () in
+  let b = JsObject.new_object_with_prototype a in
+  let c = JsObject.new_object_with_prototype b in
+  let () = JsObject.put "foo" (TyNumber 100.) a in
+  JsObject.has_property "foo" c
